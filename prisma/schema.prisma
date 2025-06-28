@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  fullName  String
+  email     String    @unique
+  cpf       String    @unique
+  password  String
+  accounts  Account[]
+  externalBanks ExternalBankAccount[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+model ExternalBankAccount {
+  id             String   @id @default(uuid())
+  userId         String
+  institution    String
+  accountNumber  String
+  balance        Decimal
+  availableLimit Decimal
+  creditCard     Boolean
+  transactions   Json     
+  connected      Boolean  @default(false)
+  consentedData  Json
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+}
+model Account {
+  id        String     @id @default(uuid())
+  number    String     @unique
+  agency    String     @default("0001")
+  balance   Decimal    @default(0.0)
+  pixKeys   PixKey[]   
+  owner     User       @relation(fields: [ownerId], references: [id])
+  ownerId   String
+  sentTransactions     Transaction[] @relation("Sender")
+  receivedTransactions Transaction[] @relation("Receiver")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+model Transaction {
+  id          String   @id @default(uuid())
+  fromId      String
+  toId        String
+  from        Account  @relation("Sender", fields: [fromId], references: [id])
+  to          Account  @relation("Receiver", fields: [toId], references: [id])
+  amount      Decimal
+  type        String
+  description String?
+  createdAt   DateTime @default(now())
+}
+model PixKey {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  type      String
+  account   Account  @relation(fields: [accountId], references: [id])
+  accountId String
+  createdAt DateTime @default(now())
+}
+
+
+
